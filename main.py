@@ -10,8 +10,10 @@ from termcolor import cprint
 from tqdm import tqdm
 
 from src.datasets import ThingsMEGDataset
-from src.models import BasicConvClassifier
+from src.models import BasicConvClassifier, DECNN
 from src.utils import set_seed
+
+
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
@@ -39,6 +41,10 @@ def run(args: DictConfig):
     # ------------------
     #       Model
     # ------------------
+    # model = BasicConvClassifier(
+    #     train_set.num_classes, train_set.seq_len, train_set.num_channels
+    # ).to(args.device)
+
     model = BasicConvClassifier(
         train_set.num_classes, train_set.seq_len, train_set.num_channels
     ).to(args.device)
@@ -55,6 +61,7 @@ def run(args: DictConfig):
     accuracy = Accuracy(
         task="multiclass", num_classes=train_set.num_classes, top_k=10
     ).to(args.device)
+    alpha = 1e-4    # L1正則化の係数
       
     for epoch in range(args.epochs):
         print(f"Epoch {epoch+1}/{args.epochs}")
@@ -68,6 +75,13 @@ def run(args: DictConfig):
             y_pred = model(X)
             
             loss = F.cross_entropy(y_pred, y)
+
+            # L1正則化を行い，スパースな重みを学習する
+            l1 = torch.tensor(0., requires_grad=True)
+            for w in model.parameters():
+                l1 = l1 + torch.norm(w, 1)
+            loss = loss + alpha*l1
+
             train_loss.append(loss.item())
             
             optimizer.zero_grad()

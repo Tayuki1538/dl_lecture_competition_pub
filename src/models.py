@@ -74,3 +74,71 @@ class ConvBlock(nn.Module):
         # X = F.glu(X, dim=-2)
 
         return self.dropout(X)
+
+    
+# Subject-Independent Emotion Recognition of EEG Signals Based on Dynamic Empirical Convolutional Neural Network        #追加
+class DECNN(nn.Module):
+    def __init__(
+        self,
+        in_dim: int = 1,
+        out_dim: int = 1854,
+        kernel_size: int = 5,
+        kernel_size2: int = 3,
+        kernel_size3: int = 1,
+        p_drop: float = 0.1,
+    ) -> None:
+        super().__init__()
+        
+        self.in_dim = in_dim
+        self.out_dim = out_dim
+
+        self.conv0 = nn.Conv2d(in_dim, 32, (kernel_size, kernel_size))
+        self.conv1 = nn.Conv2d(32, 64, (kernel_size, kernel_size))
+        self.conv2 = nn.Conv2d(64, 128, (kernel_size2, kernel_size))
+        self.conv3 = nn.Conv2d(128, 256, (kernel_size2, kernel_size))
+        self.conv4 = nn.Conv2d(256, 512, (kernel_size3, kernel_size))
+        # self.conv2 = nn.Conv1d(out_dim, out_dim, kernel_size) # , padding="same")
+
+        self.maxpool = nn.MaxPool2d(2, 2)
+        self.Averagepool = nn.AdaptiveAvgPool1d(1)
+        
+        self.batchnorm0 = nn.BatchNorm2d(num_features=32)
+        self.batchnorm1 = nn.BatchNorm2d(num_features=64)
+
+        self.dropout = nn.Dropout(p_drop)
+
+        self.fc0 = nn.Linear(64, 1024)
+        self.fc1 = nn.Linear(1024, out_dim)
+
+    def forward(self, X: torch.Tensor) -> torch.Tensor:
+        X = self.conv0(X)
+        X = F.gelu(self.batchnorm0(X))
+        X = self.maxpool(X)
+
+        X = self.conv1(X)
+        X = F.gelu(self.batchnorm1(X))
+        X = self.maxpool(X)
+
+        # X = self.conv2(X)
+        # X = F.relu(X)
+        # X = self.maxpool(X)
+
+        # X = self.conv3(X)
+        # X = F.relu(X)
+        # X = self.maxpool(X)
+
+        # X = self.conv4(X)
+        # X = F.relu(X)
+        # X = self.maxpool(X)
+
+        X = self.Averagepool(X)
+
+        X = X.flatten()
+
+        X = self.fc0(X)
+        X = self.fc1(X)
+
+        # X = self.conv2(X)
+        # X = F.glu(X, dim=-2)
+
+        return F.softmax(X)

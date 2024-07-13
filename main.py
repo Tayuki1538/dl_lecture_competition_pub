@@ -55,6 +55,7 @@ def run(args: DictConfig):
     accuracy = Accuracy(
         task="multiclass", num_classes=train_set.num_classes, top_k=10
     ).to(args.device)
+    alpha = args.alpha  # L1正則化の重み
       
     for epoch in range(args.epochs):
         print(f"Epoch {epoch+1}/{args.epochs}")
@@ -68,6 +69,13 @@ def run(args: DictConfig):
             y_pred = model(X)
             
             loss = F.cross_entropy(y_pred, y)
+
+            # パラメータのL1ノルムを損失関数に足す
+            l1 = torch.tensor(0., requires_grad=True)
+            for w in model.parameters():
+                l1 = l1 + torch.norm(w, 1)
+            loss = loss + alpha*l1
+
             train_loss.append(loss.item())
             
             optimizer.zero_grad()

@@ -1,13 +1,16 @@
 batch_size: 128
-epochs: 80
+epochs: 20
 lr: 0.001
 
-device: cuda:0
+device: mps
 num_workers: 4
 seed: 1234
 use_wandb: False
 
-data_dir: data
+data_dir: "/Volumes/SanDisk Extreme 55AE Media/data-omni"
 
 # Evaluation
 model_path: 
+
+# L1 normalization
+alpha: 1e-3

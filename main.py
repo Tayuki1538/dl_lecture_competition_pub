@@ -10,7 +10,8 @@ from termcolor import cprint
 from tqdm import tqdm
 
 from src.datasets import ThingsMEGDataset
-from src.models import BasicConvClassifier
+from src.models import BasicConvClassifier, VGG
+from src.vit_model import ViT
 from src.utils import set_seed
 
 
@@ -39,9 +40,19 @@ def run(args: DictConfig):
     # ------------------
     #       Model
     # ------------------
+
+    # default model
     model = BasicConvClassifier(
         train_set.num_classes, train_set.seq_len, train_set.num_channels
     ).to(args.device)
+
+    # VGG model
+    # model = VGG().to(args.device)
+
+    # ViT model
+    # model = ViT(
+    #     train_set.num_channels, train_set.seq_len, 27, 28, train_set.num_classes, 1024, 6, 16
+    # ).to(args.device)
 
     # ------------------
     #     Optimizer
@@ -56,6 +67,8 @@ def run(args: DictConfig):
         task="multiclass", num_classes=train_set.num_classes, top_k=10
     ).to(args.device)
     alpha = args.alpha  # L1正則化の重み
+
+    count = 0
       
     for epoch in range(args.epochs):
         print(f"Epoch {epoch+1}/{args.epochs}")
@@ -104,6 +117,13 @@ def run(args: DictConfig):
             cprint("New best.", "cyan")
             torch.save(model.state_dict(), os.path.join(logdir, "model_best.pt"))
             max_val_acc = np.mean(val_acc)
+            count = 0
+
+        else:
+            count += 1
+            if count > args.patience:
+                cprint("Early stopping.", "yellow")
+                break
             
     
     # ----------------------------------

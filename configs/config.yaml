@@ -1,5 +1,5 @@
 batch_size: 128
-epochs: 20
+epochs: 50
 lr: 0.001
 
 device: mps
@@ -13,4 +13,9 @@ data_dir: "/Volumes/SanDisk Extreme 55AE Media/data-omni"
 model_path: 
 
 # L1 normalization
-alpha: 1e-3
+alpha: 1e-5
+
+# patience for early stopping
+patience: 5
+
+# 
